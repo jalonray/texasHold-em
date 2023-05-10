@@ -1,17 +1,6 @@
 <template>
-  <TexasHoldem/>
+  <router-view/>
 </template>
-
-<script>
-import TexasHoldem from './components/TexasHoldem'
-
-export default {
-  name: 'App',
-  components: {
-    TexasHoldem
-  }
-}
-</script>
 
 <style>
 #app {

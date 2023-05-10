@@ -1,8 +1,6 @@
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 import { rankCards } from 'phe';
-
-
 // A schema is a collection of type definitions (hence "typeDefs")
 // that together define the "shape" of queries that are executed against
 // your data.
@@ -53,9 +51,9 @@ type Query {
 
 type Mutation {
     addPlayer(name: String): Game
-    playerAction(id: Int, action: PlayerAction): Game
-    nextStep(id: Int): Game
-    leavePlayer(id: Int): Game
+    playerAction(id: ID, action: PlayerAction): Game
+    nextStep(id: ID): Game
+    leavePlayer(id: ID): Game
 }
 
 enum PlayerAction {
@@ -65,33 +63,15 @@ enum PlayerAction {
     ALL_IN
 }
 `;
-
 const initialPoint = 10000;
-enum PlayerAction {
-    CALL,
-RAISE,
-FOLD,
-ALL_IN
-}
+var PlayerAction;
+(function (PlayerAction) {
+    PlayerAction[PlayerAction["CALL"] = 0] = "CALL";
+    PlayerAction[PlayerAction["RAISE"] = 1] = "RAISE";
+    PlayerAction[PlayerAction["FOLD"] = 2] = "FOLD";
+    PlayerAction[PlayerAction["ALL_IN"] = 3] = "ALL_IN";
+})(PlayerAction || (PlayerAction = {}));
 class Player {
-    id: number
-    position: number
-    number: number
-    point: number
-    cash: number
-    name: string
-    isButton: Boolean
-    isBigBlind: Boolean
-    isSmallBlind: Boolean
-    smallBlind: number
-    bigBlind: number
-    hole1: Card
-    hole2: Card
-    isEnd: Boolean
-    rank: number;
-    inGame: Boolean;
-
-
     constructor() {
         this.id = -1;
         this.position = -1;
@@ -108,11 +88,10 @@ class Player {
         this.rank = 100;
         this.inGame = false;
     }
-
     win(winCash) {
         this.point += winCash;
     }
-    pay(addCash: number) {
+    pay(addCash) {
         this.point -= addCash;
         this.cash += addCash;
         cashPool += addCash;
@@ -120,7 +99,7 @@ class Player {
             maxCash = this.cash;
         }
     }
-    doAction(action: PlayerAction, raise: number) {
+    doAction(action, raise) {
         switch (action) {
             case PlayerAction.CALL: {
                 if (this.cash < maxCash) {
@@ -133,7 +112,7 @@ class Player {
                 if (raise < maxCash) {
                     raise = maxCash;
                 }
-                if (raise >  this.point) {
+                if (raise > this.point) {
                     raise = this.point;
                 }
                 this.pay(raise);
@@ -152,7 +131,7 @@ class Player {
         }
         return this;
     }
-    preFlop(newPosition: number) {
+    preFlop(newPosition) {
         this.hole1 = drawCard();
         this.hole2 = drawCard();
         if (this.point <= 0) {
@@ -179,7 +158,7 @@ class Player {
         player.point = this.point;
         player.name = this.name;
         player.isButton = this.isButton;
-        player.isBigBlind =  this.isBigBlind;
+        player.isBigBlind = this.isBigBlind;
         player.isSmallBlind = this.isSmallBlind;
         player.smallBlind = this.smallBlind;
         player.bigBlind = this.bigBlind;
@@ -191,14 +170,8 @@ class Player {
         player.inGame = this.inGame;
         return player;
     }
-
 }
 class Card {
-    id: number
-    index: number
-    number: string
-    type: string
-
     constructor(cardIndex) {
         if (cardIndex === -1) {
             this.id = -1;
@@ -212,21 +185,11 @@ class Card {
         this.number = getCardNumber(cardIndex);
         this.type = getCardType(cardIndex);
     }
-
     getDesc() {
         return this.number.concat(this.type);
     }
 }
 class Game {
-    flopCards: Array<Card>
-    turnCard: Card
-    riverCard: Card
-    players: Array<Player>
-    cashPool: number
-    maxCash: number
-    currentPlayerId: number
-    winPlayers: Array<number>
-
     constructor() {
         this.flopCards = null;
         this.turnCard = null;
@@ -237,7 +200,6 @@ class Game {
         this.currentPlayerId = -1;
         this.winPlayers = null;
     }
-
     update(id) {
         this.flopCards = flop;
         this.turnCard = turn;
@@ -252,66 +214,61 @@ class Game {
                     value.hole2 = null;
                 }
             }
-        })
-        console.log(players)
+        });
+        console.log(players);
         this.currentPlayerId = currentPlayerId;
         return this;
     }
 }
-
 const stagePreFlop = 0;
 const stageFlop = 1;
 const stageTurn = 2;
 const stageRiver = 3;
 const stageEnd = 4;
 let currentStage = stageEnd;
-let flop: Array<Card> = Array(3);
-let turn: Card;
-let river: Card;
-let totalCards: Array<number>;
+let flop = Array(3);
+let turn;
+let river;
+let totalCards;
 const cardsNumber = 52;
 let playerNumber = 0;
-let players: Array<Player> = Array();
+let players = Array();
 let currentCardIndex = 0;
 let cashPool = 0;
 let maxCash = 0;
-let currentPlayerId: number = -1;
-const cardNumber = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
-const cardType = ['d', 'c', 'h', 's']
-
-function joinPlayer(name: string) {
+let currentPlayerId = -1;
+const cardNumber = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
+const cardType = ['d', 'c', 'h', 's'];
+function joinPlayer(name) {
     let player = new Player();
     let id = playerNumber;
     player.id = id;
     player.name = name;
     player.point = initialPoint;
-    players.push(player)
+    players.push(player);
     playerNumber++;
     return new Game().update(id);
 }
-
 function leavePlayer(playerId) {
     let i = -1;
-    players.forEach((value: Player, index: number) => {
+    players.forEach((value, index) => {
         if (value.id === playerId) {
             i = index;
             return;
         }
-    })
+    });
     if (i > -1) {
         players.splice(i, 1);
         return true;
     }
     return false;
 }
-
 function drawCard() {
     let card = new Card(totalCards[currentCardIndex]);
     currentCardIndex++;
     return card;
 }
-
-function nextStage(id: number) {
+function nextStage(id) {
     currentStage++;
     if (currentStage > stageEnd) {
         currentStage = stagePreFlop;
@@ -334,10 +291,9 @@ function nextStage(id: number) {
         }
     }
 }
-
-function startPreFlop(id: number) {
+function startPreFlop(id) {
     if (players.length <= 0) {
-        return
+        return;
     }
     totalCards = shuffle(Array.from(Array(cardsNumber).keys()));
     currentCardIndex = 0;
@@ -352,23 +308,19 @@ function startPreFlop(id: number) {
     }
     return new Game().update(id);
 }
-
-function startFlop(id: number) {
+function startFlop(id) {
     flopCards();
     return new Game().update(id);
 }
-
-function startTurn(id: number) {
+function startTurn(id) {
     turnCard();
     return new Game().update(id);
 }
-
-function startRiver(id: number) {
+function startRiver(id) {
     riverCard();
     return new Game().update(id);
 }
-
-function startEnd(id: number) {
+function startEnd(id) {
     let winPlayerIds = [];
     let winPlayerRank = 100;
     let playerRanks = [[]];
@@ -380,37 +332,33 @@ function startEnd(id: number) {
         }
     });
     playerRanks.forEach((value) => {
-       if (value[1] === winPlayerRank) {
-           winPlayerIds.push(value[0]);
-       }
+        if (value[1] === winPlayerRank) {
+            winPlayerIds.push(value[0]);
+        }
     });
     let winCash = Math.floor(cashPool / winPlayerIds.length);
     cashPool = 0;
     playerRanks.forEach((value) => {
         if (value[1] === winPlayerRank) {
-            (value[0] as Player)?.win(winCash);
+            value[0]?.win(winCash);
         }
     });
     let game = new Game();
     game.winPlayers = winPlayerIds;
     return game.update(id);
 }
-
 function flopCards() {
     for (let i = 0; i < 3; i++) {
         flop[i] = drawCard();
     }
 }
-
 function turnCard() {
     turn = drawCard();
 }
-
 function riverCard() {
     river = drawCard();
 }
-
-function nextPlayer(id: number) {
+function nextPlayer(id) {
     let index = -1;
     for (let i = 0; i < players.length; i++) {
         if (players[i].id === id) {
@@ -424,27 +372,25 @@ function nextPlayer(id: number) {
     currentPlayerId = players[index].id;
     return currentPlayerId;
 }
-
 function allPlayers() {
-    let newPlayers = Array<Player>();
+    let newPlayers = Array();
     players.forEach((value) => {
         let user = value.copy();
         newPlayers.push(user);
     });
     return newPlayers;
 }
-
-function evaluateCard(player: Player) {
-    if (player === null || player.hole1 === null || player.hole2 === null)  {
-        return 100
+function evaluateCard(player) {
+    if (player === null || player.hole1 === null || player.hole2 === null) {
+        return 100;
     }
-    let cards = Array<string>();
+    let cards = Array();
     cards.push(player.hole1.getDesc());
     cards.push(player.hole2.getDesc());
     if (flop != null && flop.length === 3) {
         flop.forEach((value) => {
             cards.push(value.getDesc());
-        })
+        });
     }
     if (turn != null) {
         cards.push(turn.getDesc());
@@ -454,7 +400,6 @@ function evaluateCard(player: Player) {
     }
     return rankCards(cards);
 }
-
 function shuffle(cards) {
     for (let i = cards.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -464,25 +409,22 @@ function shuffle(cards) {
     }
     return cards;
 }
-
 function getCardType(index) {
     return cardType[Math.floor(index / 13)];
 }
 function getCardNumber(index) {
     return cardNumber[index % 13];
 }
-
 function doPlayerAction(id, action, raise) {
     players.find((value) => {
         if (value.id === id) {
-            return value
+            return value;
         }
         return null;
     })?.doAction(action, raise);
     nextPlayer(id);
     return new Game().update(id);
 }
-
 // Resolvers define how to fetch the types defined in your schema.
 // This resolver retrieves books from the "books" array above.
 const resolvers = {
@@ -511,14 +453,12 @@ const resolvers = {
         },
     }
 };
-
 // The ApolloServer constructor requires two parameters: your schema
 // definition and your set of resolvers.
 const server = new ApolloServer({
     typeDefs,
     resolvers,
 });
-
 // Passing an ApolloServer instance to the `startStandaloneServer` function:
 //  1. creates an Express app
 //  2. installs your ApolloServer instance as middleware
@@ -526,5 +466,4 @@ const server = new ApolloServer({
 const { url } = await startStandaloneServer(server, {
     listen: { port: 4000 },
 });
-
 console.log(`🚀  Server ready at: ${url}`);

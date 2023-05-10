@@ -1,5 +1,13 @@
 <template>
-  <div class="about">
-    <h1>This is an about page</h1>
+  <div class="game">
+    <TexasHoldem/>
   </div>
 </template>
+<script>
+import {defineComponent} from "vue";
+import TexasHoldem from "@/components/TexasHoldem.vue";
+
+export default defineComponent({
+    components: {TexasHoldem}
+})
+</script>
