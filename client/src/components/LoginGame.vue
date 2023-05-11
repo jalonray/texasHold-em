@@ -1,18 +1,4 @@
-<template>
-  <div class="hello">
-    <h1>{{ msg }}</h1>
-      <p/>
-      <p/>
-      <input v-model="playerName" placeholder="输入昵称"/>
-      <p/>
-      <p/>
-      <button @click="joinGame">
-          进入游戏
-      </button>
-  </div>
-</template>
-
-<script>
+<script setup lang="ts">
 import router from "@/router";
 
 export default {
@@ -21,7 +7,7 @@ export default {
             playerName:''
         }
     },
-  name: 'HelloWorld',
+  name: 'LoginGame',
   props: {
     msg: String
   },
@@ -33,6 +19,22 @@ export default {
   }
 }
 </script>
+
+<template>
+    <div class="hello">
+      <h1>{{ msg }}</h1>
+        <p/>
+        <p/>
+        <input v-model="playerName" placeholder="输入昵称"/>
+        <p/>
+        <p/>
+        <button @click="joinGame">
+            进入游戏
+        </button>
+    </div>
+</template>
+  
+  
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>

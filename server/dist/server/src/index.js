@@ -1,49 +1,44 @@
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 import { rankCards } from 'phe';
-import {TexasDef} from '../../src/components/TypeDescription';
-import cardNumber = TexasDef.cardNumber;
-import cardType = TexasDef.cardType;
-import stageFlop = TexasDef.stageFlop;
-import stageTurn = TexasDef.stageTurn;
-import stageRiver = TexasDef.stageRiver;
-import stageEnd = TexasDef.stageEnd;
-import invisibleCard = TexasDef.invisibleCard;
-import initialPoint = TexasDef.initialPoint;
-import stagePreFlop = TexasDef.stagePreFlop;
-import cardsNumber = TexasDef.cardsNumber;
-import Player = TexasDef.Player;
-import Game = TexasDef.Game;
-import drawCard = TexasDef.drawCard;
-import typeDefs = TexasDef.typeDefs;
-
-function joinPlayer(name: string) {
+import { TexasDef } from '@/components/TypeDescription.ts';
+var stageFlop = TexasDef.stageFlop;
+var stageTurn = TexasDef.stageTurn;
+var stageRiver = TexasDef.stageRiver;
+var stageEnd = TexasDef.stageEnd;
+var invisibleCard = TexasDef.invisibleCard;
+var initialPoint = TexasDef.initialPoint;
+var stagePreFlop = TexasDef.stagePreFlop;
+var cardsNumber = TexasDef.cardsNumber;
+var Player = TexasDef.Player;
+var Game = TexasDef.Game;
+var drawCard = TexasDef.drawCard;
+var typeDefs = TexasDef.typeDefs;
+function joinPlayer(name) {
     let player = new Player();
     let id = TexasDef.playerNumber;
     player.id = id;
     player.name = name;
     player.point = initialPoint;
-    TexasDef.players.push(player)
+    TexasDef.players.push(player);
     TexasDef.playerNumber++;
     return new Game().update(id);
 }
-
 function leavePlayer(playerId) {
     let i = -1;
-    TexasDef.players.forEach((value: TexasDef.Player, index: number) => {
+    TexasDef.players.forEach((value, index) => {
         if (value.id === playerId) {
             i = index;
             return;
         }
-    })
+    });
     if (i > -1) {
         TexasDef.players.splice(i, 1);
         return true;
     }
     return false;
 }
-
-function nextStage(id: number) {
+function nextStage(id) {
     TexasDef.currentStage++;
     if (TexasDef.currentStage > stageEnd) {
         TexasDef.currentStage = stagePreFlop;
@@ -66,10 +61,9 @@ function nextStage(id: number) {
         }
     }
 }
-
-function startPreFlop(id: number) {
+function startPreFlop(id) {
     if (TexasDef.players.length <= 0) {
-        return
+        return;
     }
     TexasDef.totalCards = shuffle(Array.from(Array(cardsNumber).keys()));
     TexasDef.currentCardIndex = 0;
@@ -84,23 +78,19 @@ function startPreFlop(id: number) {
     }
     return new Game().update(id);
 }
-
-function startFlop(id: number) {
+function startFlop(id) {
     flopCards();
     return new Game().update(id);
 }
-
-function startTurn(id: number) {
+function startTurn(id) {
     turnCard();
     return new Game().update(id);
 }
-
-function startRiver(id: number) {
+function startRiver(id) {
     riverCard();
     return new Game().update(id);
 }
-
-function startEnd(id: number) {
+function startEnd(id) {
     let winPlayerIds = [];
     let winPlayerRank = 100;
     let playerRanks = [[]];
@@ -112,37 +102,33 @@ function startEnd(id: number) {
         }
     });
     playerRanks.forEach((value) => {
-       if (value[1] === winPlayerRank) {
-           winPlayerIds.push(value[0]);
-       }
+        if (value[1] === winPlayerRank) {
+            winPlayerIds.push(value[0]);
+        }
     });
     let winCash = Math.floor(TexasDef.cashPool / winPlayerIds.length);
     TexasDef.cashPool = 0;
     playerRanks.forEach((value) => {
         if (value[1] === winPlayerRank) {
-            (value[0] as Player)?.win(winCash);
+            value[0]?.win(winCash);
         }
     });
     let game = new Game();
     game.winPlayers = winPlayerIds;
     return game.update(id);
 }
-
 function flopCards() {
     for (let i = 0; i < 3; i++) {
         TexasDef.flop[i] = drawCard();
     }
 }
-
 function turnCard() {
     TexasDef.turn = drawCard();
 }
-
 function riverCard() {
     TexasDef.river = drawCard();
 }
-
-function nextPlayer(id: number) {
+function nextPlayer(id) {
     let index = -1;
     for (let i = 0; i < TexasDef.players.length; i++) {
         if (TexasDef.players[i].id === id) {
@@ -162,18 +148,17 @@ function nextPlayer(id: number) {
     TexasDef.currentPlayerId = TexasDef.players[index].id;
     return TexasDef.currentPlayerId;
 }
-
-function evaluateCard(player: Player) {
-    if (player === null || player.hole1 === invisibleCard || player.hole2 === invisibleCard)  {
-        return 100
+function evaluateCard(player) {
+    if (player === null || player.hole1 === invisibleCard || player.hole2 === invisibleCard) {
+        return 100;
     }
-    let cards = Array<string>();
+    let cards = Array();
     cards.push(player.hole1.getDesc());
     cards.push(player.hole2.getDesc());
     if (TexasDef.flop != null && TexasDef.flop.length === 3) {
         TexasDef.flop.forEach((value) => {
             cards.push(value.getDesc());
-        })
+        });
     }
     if (TexasDef.turn != null) {
         cards.push(TexasDef.turn.getDesc());
@@ -183,7 +168,6 @@ function evaluateCard(player: Player) {
     }
     return rankCards(cards);
 }
-
 function shuffle(cards) {
     for (let i = cards.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -193,24 +177,22 @@ function shuffle(cards) {
     }
     return cards;
 }
-
 function doPlayerAction(id, action, raise) {
     TexasDef.players.find((value) => {
         if (value.id === id) {
-            return value
+            return value;
         }
         return null;
     })?.doAction(action, raise);
     nextPlayer(id);
     return new Game().update(id);
 }
-
 // Resolvers define how to fetch the types defined in your schema.
 // This resolver retrieves books from the "books" array above.
 const resolvers = {
     Query: {
         game(parent, args, contextValue, info) {
-            const { id } = args
+            const { id } = args;
             console.log(id);
             return new Game().update(id);
         },
@@ -238,14 +220,12 @@ const resolvers = {
         },
     }
 };
-
 // The ApolloServer constructor requires two parameters: your schema
 // definition and your set of resolvers.
 const server = new ApolloServer({
     typeDefs,
     resolvers,
 });
-
 // Passing an ApolloServer instance to the `startStandaloneServer` function:
 //  1. creates an Express app
 //  2. installs your ApolloServer instance as middleware
@@ -253,5 +233,4 @@ const server = new ApolloServer({
 const { url } = await startStandaloneServer(server, {
     listen: { port: 4000 },
 });
-
 console.log(`🚀  Server ready at: ${url}`);

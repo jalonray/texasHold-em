@@ -46,21 +46,14 @@ type Game {
 # clients can execute, along with the return type for each. In this
 # case, the "books" query returns an array of zero or more Books (defined above).
 type Query {
-    game(id: ID): Game
+    game(id: Int): Game
 }
 
 type Mutation {
     addPlayer(name: String): Game
-    playerAction(id: ID, action: PlayerAction): Game
-    nextStep(id: ID): Game
-    leavePlayer(id: ID): Game
-}
-
-enum PlayerAction {
-    CALL
-    RAISE
-    FOLD
-    ALL_IN
+    playerAction(id: Int, action: Int, raise: Int): Game
+    nextStep(id: Int): Game
+    leavePlayer(id: Int): Game
 }
 `;
 const initialPoint = 10000;
@@ -363,7 +356,13 @@ function nextPlayer(id) {
     for (let i = 0; i < players.length; i++) {
         if (players[i].id === id) {
             index = i + 1;
-            return index;
+            break;
+        }
+    }
+    for (let i = index; i < players.length; i++) {
+        if (players[i].isEnd != true) {
+            index = i;
+            break;
         }
     }
     if (index >= players.length) {
@@ -429,25 +428,30 @@ function doPlayerAction(id, action, raise) {
 // This resolver retrieves books from the "books" array above.
 const resolvers = {
     Query: {
-        game(id) {
+        game(parent, args, contextValue, info) {
+            const { id } = args;
             console.log(id);
             return new Game().update(id);
         },
     },
     Mutation: {
-        addPlayer: (name) => {
+        addPlayer: (root, args, context) => {
+            const { name } = args;
             console.log(name);
             return joinPlayer(name);
         },
-        playerAction: (id, action, raise) => {
+        playerAction: (root, args, context) => {
+            const { id, action, raise } = args;
             console.log(id, action, raise);
             return doPlayerAction(id, action, raise);
         },
-        nextStep: (id) => {
+        nextStep: (root, args, context) => {
+            const { id } = args;
             console.log(id);
             return nextStage(id);
         },
-        leavePlayer: (id) => {
+        leavePlayer: (root, args, context) => {
+            const { id } = args;
             console.log(id);
             return leavePlayer(id);
         },
